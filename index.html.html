@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>訪問看護 料金概算シミュレーター</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; font-size: 15px; color: #1a1a1a; background: #f2f2f0; padding: 12px; }
+.wrap { max-width: 760px; margin: 0 auto; }
+h1 { font-size: 17px; font-weight: 700; margin-bottom: 12px; }
+h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; border: 1px solid #e0e0de; }
+.card.nurse { border-left: 4px solid #1a6ab0; }
+.card.rehab { border-left: 4px solid #2d7a2d; }
+.field { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0ee; gap: 8px; }
+.field:last-child { border-bottom: none; }
+.field label { font-size: 13px; min-width: 130px; flex-shrink: 0; color: #444; }
+.field select { font-size: 16px; border: 1px solid #bbb; border-radius: 8px; padding: 7px 10px; background: #fff; flex: 1; min-height: 42px; color: #1a1a1a; }
+.field input[type=number] { font-size: 16px; border: 1px solid #bbb; border-radius: 8px; padding: 7px 10px; width: 90px; min-height: 42px; text-align: center; color: #1a1a1a; }
+.field .sub { font-size: 12px; color: #888; }
+.badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; margin-left: 6px; }
+.badge.n { background: #deeeff; color: #1a4a7a; }
+.badge.r { background: #deffde; color: #1a5a1a; }
+.btn-toggle { width: 100%; padding: 12px; font-size: 15px; font-weight: 500; border-radius: 10px; border: 1.5px solid #bbb; background: #f8f8f6; cursor: pointer; margin-bottom: 10px; min-height: 48px; color: #333; }
+.btn-toggle.on { background: #deeeff; border-color: #1a6ab0; color: #1a4a7a; }
+.btn-small { font-size: 13px; padding: 6px 12px; border-radius: 8px; border: 1px solid #bbb; background: #f8f8f6; cursor: pointer; margin-left: 8px; min-height: 34px; }
+.deduct { background: #fafaf8; border-radius: 8px; padding: 10px; margin-top: 8px; border: 1px solid #e8e8e4; }
+.deduct h3 { font-size: 12px; color: #666; margin-bottom: 6px; }
+.drow { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid #f0f0ee; }
+.drow:last-child { border-bottom: none; }
+.drow input[type=checkbox] { width: 22px; height: 22px; flex-shrink: 0; margin-top: 1px; }
+.drow .dtxt { flex: 1; }
+.drow .dname { font-size: 13px; font-weight: 500; }
+.drow .ddesc { font-size: 11px; color: #888; margin-top: 2px; line-height: 1.5; }
+.warn { background: #fff8e6; border: 1px solid #f0d060; border-radius: 8px; padding: 8px 10px; font-size: 12px; color: #7a5000; margin-top: 8px; line-height: 1.5; }
+.grp-ttl { font-size: 12px; font-weight: 700; color: #888; padding: 8px 0 4px; border-bottom: 1px solid #eee; margin-bottom: 4px; }
+.arow { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f4f4f4; }
+.arow:last-child { border-bottom: none; }
+.arow input[type=checkbox] { width: 22px; height: 22px; flex-shrink: 0; margin-top: 1px; }
+.arow .atxt { flex: 1; }
+.arow .aname { font-size: 14px; font-weight: 500; }
+.arow .afee { font-size: 12px; color: #666; margin-top: 2px; }
+.arow .areq { font-size: 11px; color: #999; margin-top: 2px; line-height: 1.5; }
+.arow .aamt { font-size: 13px; font-weight: 700; color: #1a6ab0; min-width: 80px; text-align: right; padding-top: 2px; flex-shrink: 0; }
+.result { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.rbox { background: #fff; border-radius: 10px; padding: 10px 12px; border: 1px solid #e0e0de; }
+.rbox .rl { font-size: 11px; color: #888; margin-bottom: 4px; }
+.rbox .rv { font-size: 20px; font-weight: 700; }
+.c-blue { color: #1a6ab0; }
+.c-red { color: #c0392b; }
+.c-green { color: #1a7a1a; }
+.c-amber { color: #c07000; }
+.saving { background: #eef6ff; border: 1px solid #a0c8f0; border-radius: 10px; padding: 10px 12px; font-size: 13px; color: #1a4a7a; margin-bottom: 8px; }
+.note { font-size: 11px; color: #aaa; line-height: 1.8; margin-top: 8px; }
+.detail { background: #f8f8f6; border-radius: 8px; padding: 8px 10px; border: 1px solid #e4e4e0; }
+.drow2 { display: flex; justify-content: space-between; align-items: flex-start; padding: 5px 0; border-bottom: 1px solid #eeeee9; font-size: 13px; gap: 8px; }
+.drow2:last-child { border-bottom: none; }
+.drow2 .dn { color: #444; flex: 1; line-height: 1.4; }
+.drow2 .dv { color: #1a6ab0; font-weight: 600; white-space: nowrap; }
+.drow2 .dsub { font-size: 11px; color: #888; margin-top: 2px; }
+.detail-title { font-size: 12px; font-weight: 700; color: #888; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>訪問看護 料金概算シミュレーター（2024年度対応）</h1>
+
+<!-- 共通設定 -->
+<div class="card">
+  <h2>共通設定</h2>
+  <div class="field">
+    <label>保険種別</label>
+    <select id="ins" onchange="onInsChange()">
+      <option value="med">医療保険（健康保険）</option>
+      <option value="ij">介護保険（要介護）</option>
+      <option value="ys">介護保険（要支援）</option>
+    </select>
+  </div>
+  <div class="field" id="age-row">
+    <label>年齢区分</label>
+    <select id="age-group" onchange="onAgeChange()">
+      <option value="u70">69歳以下</option>
+      <option value="o70">70〜74歳</option>
+      <option value="o75">75歳以上（後期高齢者）</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>自己負担割合</label>
+    <select id="burden" onchange="calc()">
+      <option value="1">1割</option>
+      <option value="2">2割</option>
+      <option value="3">3割</option>
+    </select>
+  </div>
+  <div class="field" id="kanri-row">
+    <label>管理療養費の種別</label>
+    <select id="kanri-type" onchange="calc()">
+      <option value="other" selected>その他（7,670円）＊デフォルト</option>
+      <option value="kino3">機能強化型3（8,700円）</option>
+      <option value="kino2">機能強化型2（10,030円）</option>
+      <option value="kino1">機能強化型1（13,230円）</option>
+    </select>
+  </div>
+  <div class="field" id="kanri2-row">
+    <label>管理療養費2日目以降</label>
+    <select id="kanri2-type" onchange="calc()">
+      <option value="1" selected>療養費1（3,000円）同一建物7割未満・重症実績あり</option>
+      <option value="2">療養費2（2,500円）上記以外</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>所得区分</label>
+    <select id="income" onchange="onIncomeChange()">
+      <option value="">選択してください</option>
+    </select>
+  </div>
+  <div class="field" id="multi-wrap" style="display:none">
+    <label>多数該当</label>
+    <select id="multi" onchange="calc()">
+      <option value="0">なし</option>
+      <option value="1">あり（直近12か月3回以上）</option>
+    </select>
+  </div>
+  <div id="income-hint" style="font-size:12px;color:#888;padding:6px 0 2px;"></div>
+</div>
+
+<!-- 看護師訪問 -->
+<div class="card nurse">
+  <h2>看護師訪問<span class="badge n">看護師・准看護師</span></h2>
+  <div class="field">
+    <label>月の訪問回数</label>
+    <input type="number" id="n-v" value="8" min="0" max="60" onchange="calc()" oninput="calc()">
+    <span class="sub">週2回＝8　週3回＝12</span>
+  </div>
+  <div class="field">
+    <label>訪問時間</label>
+    <select id="n-t" onchange="calc()">
+      <option value="mn30">30分未満（425点）</option>
+      <option value="mn60" selected>30分以上1時間未満（555点）</option>
+      <option value="mn90">1時間以上1時間30分未満（655点）</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>同一建物の人数</label>
+    <select id="n-d" onchange="calc()">
+      <option value="1">1名（通常）</option>
+      <option value="2">2名（10%減算）</option>
+      <option value="3">3名以上（15%減算）</option>
+    </select>
+  </div>
+  <div id="nurse-detail" style="margin-top:8px;"></div>
+</div>
+
+<!-- リハビリ追加ボタン -->
+<button class="btn-toggle" id="special-btn" onclick="toggleSpecial()">＋ 特別訪問看護指示書期間（最大14日）を追加する</button>
+
+<div class="card" id="special-card" style="display:none;border-left:3px solid #8B2252;">
+  <h2 style="color:#8B2252;">特別訪問看護指示書期間<span style="font-size:11px;font-weight:400;margin-left:8px;background:#F3E5F5;color:#6A1B9A;padding:2px 8px;border-radius:99px;">医療保険のみ・最大14日</span>
+    <button onclick="toggleSpecial()" style="font-size:12px;padding:4px 10px;border-radius:6px;border:1px solid #ccc;background:#f8f8f6;cursor:pointer;margin-left:8px;float:right;">削除</button>
+  </h2>
+  <div style="font-size:12px;color:#666;margin-bottom:10px;line-height:1.6;background:#F3E5F5;padding:8px 10px;border-radius:8px;">
+    急性増悪等で主治医が週4日以上の頻回訪問を必要と判断した場合に交付。指示期間は最大14日間。<br>
+    週4日目以降は基本療養費が上がります（30分以上1時間未満：5,550円→6,550円）。<br>
+    1週間は日曜起算で計算。管理療養費は初日12,830円＋2日目以降3,000円/日。
+  </div>
+  <div class="field">
+    <label>指示書の開始曜日</label>
+    <select id="sp-start" onchange="calcSpecial()">
+      <option value="0">日曜日</option>
+      <option value="1">月曜日</option>
+      <option value="2">火曜日</option>
+      <option value="3">水曜日</option>
+      <option value="4">木曜日</option>
+      <option value="5">金曜日</option>
+      <option value="6">土曜日</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>指示期間の合計訪問日数</label>
+    <input type="number" id="sp-total" value="14" min="1" max="14" onchange="calcSpecial()" oninput="calcSpecial()">
+    <span style="font-size:12px;color:#888;">日（最大14日）</span>
+  </div>
+  <div class="field">
+    <label>訪問時間</label>
+    <select id="sp-time" onchange="calcSpecial()">
+      <option value="mn30">30分未満（週3日以内:4,250円 / 週4日目以降:5,250円）</option>
+      <option value="mn60" selected>30分以上1時間未満（週3日以内:5,550円 / 週4日目以降:6,550円）</option>
+      <option value="mn90">1時間以上1時間30分未満（週3日以内:6,550円 / 週4日目以降:7,550円）</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>同一建物の人数</label>
+    <select id="sp-doitu" onchange="calcSpecial()">
+      <option value="1">1名（通常）</option>
+      <option value="2">2名（10%減算）</option>
+      <option value="3">3名以上（15%減算）</option>
+    </select>
+  </div>
+  <div style="margin-top:10px;" id="special-detail"></div>
+</div>
+
+<button class="btn-toggle" id="rehab-btn" onclick="toggleRehab()">＋ リハビリ訪問（訪問看護Ⅰ5）を追加する</button>
+
+<!-- リハビリ訪問 -->
+<div class="card rehab" id="rehab-card" style="display:none;">
+  <h2>リハビリ訪問<span class="badge r">理学・作業・言語聴覚士</span>
+    <button class="btn-small" onclick="toggleRehab()">削除</button>
+  </h2>
+  <div class="field">
+    <label>訪問時間</label>
+    <select id="r-t" onchange="onRtChange()">
+      <option value="mr30">30分未満（425点）</option>
+      <option value="mr60" selected>30分以上1時間未満（555点）</option>
+      <option value="mr90">1時間以上1時間30分未満（655点）</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>月の訪問回数</label>
+    <input type="number" id="r-v" value="8" min="0" max="60" onchange="calc()" oninput="calc()">
+    <span class="sub">週2回＝8　週3回＝12</span>
+  </div>
+  <div class="field">
+    <label>同一建物の人数</label>
+    <select id="r-d" onchange="calc()">
+      <option value="1">1名（通常）</option>
+      <option value="2">2名（10%減算）</option>
+      <option value="3">3名以上（15%減算）</option>
+    </select>
+  </div>
+  <div class="deduct" id="deduct-wrap" style="display:none;">
+    <h3>減算の適用（介護保険のみ）</h3>
+    <div class="drow">
+      <input type="checkbox" id="da" onclick="setTimeout(calc,0)">
+      <div class="dtxt">
+        <div class="dname">前年度リハ職訪問が看護職を超える（−8単位/回）</div>
+        <div class="ddesc">緊急時訪問看護加算・特別管理加算・看護体制強化加算をいずれも算定していない場合に適用。</div>
+      </div>
+    </div>
+    <div class="drow" id="db-wrap" style="display:none;">
+      <input type="checkbox" id="db" onclick="setTimeout(calc,0)">
+      <div class="dtxt">
+        <div class="dname">要支援で12か月超継続（−5単位、8単位減算も適用中なら合計−15単位）</div>
+        <div class="ddesc">要支援者へのリハビリ訪問が12か月を超えて継続する場合に適用。</div>
+      </div>
+    </div>
+    <div class="drow" id="dc-wrap" style="display:none;">
+      <input type="checkbox" id="dc" onclick="setTimeout(calc,0)">
+      <div class="dtxt">
+        <div class="dname">Ⅰ5の2超あり（40分超・要介護265単位/要支援255単位×3回）</div>
+        <div class="ddesc">1日に40分を超える場合（3回目以降が発生）、その日の訪問分（3回全て）が「Ⅰ5の2超」専用コード（要介護265単位/回・要支援255単位/回）で算定される。90%算定と同義だが実務上は固定単位数で請求する。</div>
+      </div>
+    </div>
+  </div>
+  <div id="r-warn"></div>
+  <div id="rehab-detail" style="margin-top:8px;"></div>
+</div>
+
+<!-- 加算 -->
+<div class="card">
+  <h2>加算</h2>
+  <div id="add-area"></div>
+</div>
+
+<!-- 結果 -->
+<div class="result">
+  <div class="rbox"><div class="rl">看護師訪問 小計（10割）</div><div class="rv c-blue" id="r-n">—</div></div>
+  <div class="rbox"><div class="rl">リハビリ 小計（10割）</div><div class="rv c-green" id="r-r">—</div></div>
+</div>
+<div class="result" id="r-special-row" style="display:none;">
+  <div class="rbox" style="border-left:2px solid #8B2252;"><div class="rl">特別指示期間 小計（10割）</div><div class="rv" style="color:#8B2252;" id="r-sp">—</div></div>
+  <div class="rbox"><div class="rl">加算合計（10割）</div><div class="rv" id="r-add">—</div></div>
+</div>
+<div class="result">
+  <div class="rbox"><div class="rl">月合計（10割）</div><div class="rv c-blue" id="r-t10">—</div></div>
+  <div class="rbox"><div class="rl">自己負担額（限度額前）</div><div class="rv" id="r-jiko">—</div></div>
+  <div class="rbox"><div class="rl">自己負担限度額</div><div class="rv c-green" id="r-lim">—</div></div>
+  <div class="rbox"><div class="rl">実質負担額（限度額適用後）</div><div class="rv c-red" id="r-real">—</div></div>
+</div>
+<div id="saving-wrap"></div>
+<div class="result">
+  <div class="rbox"><div class="rl">1回あたり負担（平均）</div><div class="rv" id="r-per">—</div></div>
+  <div class="rbox"><div class="rl">高額療養費による軽減</div><div class="rv c-amber" id="r-sav">—</div></div>
+</div>
+
+<p class="note">
+※ 2024年度診療報酬・介護報酬に基づく概算です。実際の請求は事業所・地域・状態等により異なります。<br>
+※ 訪問看護は<strong>外来扱い</strong>です。70歳以上は外来の自己負担限度額を適用しています（一般：18,000円/月、住民税非課税：8,000円/月）。<br>
+※ 70歳以上の一般・住民税非課税区分は多数該当（3回以上）の適用はありません。<br>
+※ 医療保険は1点＝10円。介護保険は1単位＝10円（地域加算により異なる場合あり）。<br>
+※ 訪問看護Ⅰ5は20分＝1回として算定（40分＝2回、60分＝3回）。<br>
+※ 特別管理加算は介護保険の区分支給限度額の対象外です。<br>
+※ 高額療養費は世帯合算・院外処方との合算でさらに軽減される場合があります。
+</p>
+</div>
+
+<script>
+// ===== データ =====
+var NF = {
+  mn30:{f:4250,p:425,k:1}, mn60:{f:5550,p:555,k:1}, mn90:{f:6550,p:655,k:1},
+  ij20:{f:3140,p:314,k:0}, ij30:{f:4710,p:471,k:0}, ij60:{f:8230,p:823,k:0}, ij90:{f:11280,p:1128,k:0},
+  ys20:{f:3030,p:303,k:0}, ys30:{f:4510,p:451,k:0}, ys60:{f:7940,p:794,k:0}, ys90:{f:10900,p:1090,k:0}
+};
+var RF = {
+  mr30:{f:4250,p:425,t:1,k:1}, mr60:{f:5550,p:555,t:1,k:1}, mr90:{f:6550,p:655,t:1,k:1},
+  rij1:{u:294,t:1,k:0}, rij2:{u:294,t:2,k:0}, rij3:{u:294,t:3,k:0},
+  rys1:{u:284,t:1,k:0}, rys2:{u:284,t:2,k:0}, rys3:{u:284,t:3,k:0,half:1}
+};
+// 医療保険 高額療養費 自己負担限度額
+// 69歳以下：入院・外来の区別なし
+var IM_U70 = [
+  {g:"ア",l:"標準報酬月額83万円以上（年収約1,160万円〜）",lim:252600,r:0.01,m:140100,d:"252,600円＋（医療費－267,000円）×1%　多数該当：140,100円"},
+  {g:"イ",l:"標準報酬月額53〜79万円（年収約770〜1,160万円）",lim:167400,r:0.01,m:93000,d:"167,400円＋（医療費－558,000円）×1%　多数該当：93,000円"},
+  {g:"ウ",l:"標準報酬月額28〜50万円（年収約370〜770万円）",lim:80100,r:0.01,m:44400,d:"80,100円＋（医療費－267,000円）×1%　多数該当：44,400円"},
+  {g:"エ",l:"標準報酬月額26万円以下（年収約370万円未満）",lim:57600,r:0,m:44400,d:"57,600円　多数該当：44,400円"},
+  {g:"オ",l:"住民税非課税（低所得者）",lim:35400,r:0,m:24600,d:"35,400円　多数該当：24,600円※住民税非課税は多数回該当の適用なし"}
+];
+// 70〜74歳：外来（個人）と入院含む世帯で別の限度額
+// 訪問看護は外来扱いのため「外来（個人）」の限度額を使用
+var IM_O70 = [
+  {g:"現Ⅲ",l:"現役並み所得者Ⅲ（課税所得690万円以上）",lim:252600,r:0.01,m:140100,d:"外来個人：252,600円＋1%（入院含む世帯も同額）"},
+  {g:"現Ⅱ",l:"現役並み所得者Ⅱ（課税所得380万円以上）",lim:167400,r:0.01,m:93000,d:"外来個人：167,400円＋1%（入院含む世帯も同額）"},
+  {g:"現Ⅰ",l:"現役並み所得者Ⅰ（課税所得145万円以上）",lim:80100,r:0.01,m:44400,d:"外来個人：80,100円＋1%（入院含む世帯も同額）"},
+  {g:"一般",l:"一般（課税所得145万円未満）",lim_gai:18000,lim:57600,r:0,m:44400,d:"外来個人：18,000円（年間上限144,000円）　入院含む世帯：57,600円"},
+  {g:"非Ⅱ",l:"住民税非課税世帯Ⅱ",lim_gai:8000,lim:24600,r:0,m:null,d:"外来個人：8,000円　入院含む世帯：24,600円"},
+  {g:"非Ⅰ",l:"住民税非課税世帯Ⅰ（所得が一定以下）",lim_gai:8000,lim:15000,r:0,m:null,d:"外来個人：8,000円　入院含む世帯：15,000円"}
+];
+// 75歳以上（後期高齢者）：70〜74歳と同様の外来限度額が基本
+var IM_O75 = [
+  // 後期高齢者医療制度（75歳以上）の所得区分・外来個人限度額
+  {g:"現Ⅲ",l:"現役並み所得者Ⅲ（課税所得690万円以上）",lim:252600,r:0.01,m:140100,lim_gai:null,noMultiGai:false,
+   d:"外来個人：252,600円＋（医療費-267,000円）×1%　多数：140,100円（現役並みは入院・外来同額）"},
+  {g:"現Ⅱ",l:"現役並み所得者Ⅱ（課税所得380万円以上）",lim:167400,r:0.01,m:93000,lim_gai:null,noMultiGai:false,
+   d:"外来個人：167,400円＋（医療費-558,000円）×1%　多数：93,000円"},
+  {g:"現Ⅰ",l:"現役並み所得者Ⅰ（課税所得145万円以上）",lim:80100,r:0.01,m:44400,lim_gai:null,noMultiGai:false,
+   d:"外来個人：80,100円＋（医療費-267,000円）×1%　多数：44,400円"},
+  {g:"一般Ⅱ",l:"一般Ⅱ（課税所得28万円以上・年収200万円以上等）",lim_gai:18000,lim:57600,r:0,m:44400,noMultiGai:true,
+   d:"外来個人：18,000円/月（年間上限144,000円）　入院含む世帯：57,600円　多数該当（入院あり）：44,400円"},
+  {g:"一般Ⅰ",l:"一般Ⅰ（現役並み・一般Ⅱ・低所得以外）",lim_gai:18000,lim:57600,r:0,m:44400,noMultiGai:true,
+   d:"外来個人：18,000円/月（年間上限144,000円）　入院含む世帯：57,600円"},
+  {g:"区分Ⅱ",l:"低所得者Ⅱ（世帯全員が住民税非課税・Ⅰ以外）",lim_gai:8000,lim:24600,r:0,m:null,noMulti:true,noMultiGai:true,
+   d:"外来個人：8,000円/月　入院含む世帯：24,600円　※多数該当なし"},
+  {g:"区分Ⅰ",l:"低所得者Ⅰ（世帯全員が住民税非課税・所得0円等）",lim_gai:8000,lim:15000,r:0,m:null,noMulti:true,noMultiGai:true,
+   d:"外来個人：8,000円/月　入院含む世帯：15,000円　※多数該当なし"}
+];
+
+var IM = IM_U70; // 後方互換用
+var IC = [
+  {g:"現Ⅲ",l:"現役並みⅢ（課税所得690万円以上）",lim:140100,d:"140,100円/月"},
+  {g:"現Ⅱ",l:"現役並みⅡ（課税所得380万円以上）",lim:93000,d:"93,000円/月"},
+  {g:"現Ⅰ",l:"現役並みⅠ（課税所得145万円以上）",lim:44400,d:"44,400円/月"},
+  {g:"一般",l:"一般（市町村民税課税）",lim:44400,d:"44,400円/月"},
+  {g:"非Ⅱ",l:"住民税非課税世帯Ⅱ",lim:24600,d:"24,600円/月（個人15,000円）"},
+  {g:"非Ⅰ",l:"住民税非課税世帯Ⅰ",lim:15000,d:"15,000円/月"}
+];
+var AM = [
+  {g:"24時間・緊急対応",a:[
+    {id:"a1",n:"24時間対応体制加算イ（負担軽減取組あり）",p:680,f:6800,u:"月",q:"24時間連絡対応体制＋負担軽減取組6項目中2項目以上届出。月1回。"},
+    {id:"a2",n:"24時間対応体制加算ロ",p:652,f:6520,u:"月",q:"24時間連絡対応体制の届出のみ。月1回。"},
+    {id:"a3",n:"緊急訪問看護加算（同月14日目まで）",p:265,f:2650,u:"回",q:"主治医指示のもと計画外の緊急訪問。1〜14回目。"},
+    {id:"a4",n:"緊急訪問看護加算（同月15日目以降）",p:200,f:2000,u:"回",q:"同月15回目以降の緊急訪問。"}
+  ]},
+  {g:"特別管理",a:[
+    {id:"a5",n:"特別管理加算Ⅰ（重症度の高い利用者）",p:500,f:5000,u:"月",q:"人工呼吸器・中心静脈栄養・気管切開・留置カテーテル等（別表第8重症者）。月1回。"},
+    {id:"a6",n:"特別管理加算Ⅱ",p:250,f:2500,u:"月",q:"在宅自己腹膜灌流・自己導尿・褥瘡管理・週3日以上点滴等。月1回。ⅠとⅡは併算定不可。"}
+  ]},
+  {g:"時間帯加算",a:[
+    {id:"a7",n:"夜間・早朝訪問看護加算",p:210,f:2100,u:"回",q:"夜間（18〜22時）または早朝（6〜8時）の訪問。"},
+    {id:"a8",n:"深夜訪問看護加算",p:420,f:4200,u:"回",q:"深夜（22時〜翌6時）の訪問。"}
+  ]},
+  {g:"その他加算",a:[
+    {id:"a9",n:"難病等複数回訪問加算（1日2回）",p:450,f:4500,u:"日",q:"別表第7該当者（末期がん・難病等）に1日2回訪問。"},
+    {id:"a10",n:"難病等複数回訪問加算（1日3回以上）",p:800,f:8000,u:"日",q:"別表第7該当者に1日3回以上訪問。"},
+    {id:"a11",n:"長時間訪問看護加算",p:520,f:5200,u:"回",q:"別表第7・第8該当者等に1回90分超の訪問。週1回まで（15歳未満週3回）。"},
+    {id:"a12",n:"乳幼児加算（重症児等）",p:180,f:1800,u:"回",q:"超重症児・準超重症児または別表第7・第8に該当する6歳未満。"},
+    {id:"a13",n:"乳幼児加算（その他）",p:130,f:1300,u:"回",q:"上記以外の6歳未満の乳幼児。"},
+    {id:"a14",n:"複数名訪問看護加算（看護師等同行）",p:450,f:4500,u:"回",q:"安全上・医療処置上の必要性から2名で訪問。主治医の指示が必要。"},
+    {id:"a15",n:"在宅患者連携指導加算",p:300,f:3000,u:"月",q:"医療機関・薬局等との文書による情報共有・共同指導。月1回。"},
+    {id:"a16",n:"退院支援指導加算",p:600,f:6000,u:"月",q:"入院中に主治医等と共同で在宅療養指導（合計90分超）。退院後初回訪問時。"},
+    {id:"a17",n:"ターミナルケア療養費",p:2500,f:25000,u:"月",q:"在宅で死亡した利用者に死亡日前14日以内に2日以上ターミナルケアを実施。"},
+    {id:"a18",n:"情報提供療養費",p:150,f:1500,u:"月",q:"市町村・学校等に利用者の同意を得て文書で情報提供。月1回。"},
+    {id:"a19",n:"特別訪問看護指示加算（主治医が算定）",p:100,f:1000,u:"月",q:"急性増悪・終末期・退院直後等により一時的に週4回以上の頻回訪問が必要と主治医が判断した場合、特別訪問看護指示書を交付した際に主治医側で算定。月1回（気管カニューレ使用・真皮を越える褥瘡の状態の者は月2回）。指示期間は最大14日間。※この加算は医療機関（主治医）が算定するもので、訪問看護ステーションの算定ではありません。"}
+  ]}
+];
+var AIJ = [
+  {g:"24時間・緊急対応",a:[
+    {id:"b1",n:"緊急時訪問看護加算Ⅰ（負担軽減取組あり）",p:600,f:6000,u:"月",q:"24時間連絡・緊急対応体制＋負担軽減取組6項目中2項目以上。月1回。"},
+    {id:"b2",n:"緊急時訪問看護加算Ⅱ",p:574,f:5740,u:"月",q:"24時間連絡・緊急対応体制の届出のみ。月1回。"}
+  ]},
+  {g:"特別管理（限度額対象外）",a:[
+    {id:"b3",n:"特別管理加算Ⅰ",p:500,f:5000,u:"月",q:"人工呼吸器・中心静脈栄養・気管切開等（別表第8重症者）。月1回。区分支給限度額の対象外。"},
+    {id:"b4",n:"特別管理加算Ⅱ",p:250,f:2500,u:"月",q:"在宅自己腹膜灌流・自己導尿・褥瘡管理・週3日以上点滴等。ⅠとⅡは併算定不可。限度額対象外。"}
+  ]},
+  {g:"その他加算",a:[
+    {id:"b5",n:"ターミナルケア加算",p:2500,f:25000,u:"月",q:"在宅での看取りに際し死亡日前14日以内に2日以上ターミナルケアを実施。"},
+    {id:"b6",n:"初回加算Ⅰ（退院当日）",p:350,f:3500,u:"月",q:"退院当日に初回訪問を実施した場合。2024年改定で新設。"},
+    {id:"b7",n:"初回加算Ⅱ（退院翌日以降）",p:300,f:3000,u:"月",q:"退院翌日以降の初回訪問時。"},
+    {id:"b8",n:"退院時共同指導加算",p:600,f:6000,u:"月",q:"入院中に病院スタッフと共同で在宅療養指導。"},
+    {id:"b9",n:"看護体制強化加算Ⅰ",p:550,f:5500,u:"月",q:"ターミナルケア・重症者・緊急訪問の実績要件を満たし届出。利用者全員に月1回。"},
+    {id:"b10",n:"看護体制強化加算Ⅱ",p:250,f:2500,u:"月",q:"Ⅰより低い実績要件。"},
+    {id:"b11",n:"専門管理加算",p:250,f:2500,u:"月",q:"専門研修修了看護師または特定行為研修修了者が計画管理。2024年改定で新設。"},
+    {id:"b12",n:"夜間対応加算",p:253,f:2530,u:"月",q:"緊急時訪問看護加算算定事業所が夜間・深夜・早朝に緊急訪問した場合。月1回。"},
+    {id:"b13",n:"複数名訪問加算（看護師等）",p:450,f:4500,u:"回",q:"安全上・処置上の理由から2名で訪問。ケアプランへの位置づけが必要。"},
+    {id:"b14",n:"長時間訪問看護加算",p:300,f:3000,u:"回",q:"特別管理加算算定者または15歳未満の利用者に1回90分超の訪問。週1回まで。"}
+  ]}
+];
+var AYS = [
+  {g:"24時間・緊急対応",a:[
+    {id:"c1",n:"緊急時訪問看護加算Ⅰ（負担軽減取組あり）",p:600,f:6000,u:"月",q:"24時間連絡・緊急対応体制＋負担軽減取組6項目中2項目以上。月1回。"},
+    {id:"c2",n:"緊急時訪問看護加算Ⅱ",p:574,f:5740,u:"月",q:"24時間連絡・緊急対応体制の届出のみ。月1回。"}
+  ]},
+  {g:"特別管理（限度額対象外）",a:[
+    {id:"c3",n:"特別管理加算Ⅰ",p:500,f:5000,u:"月",q:"人工呼吸器・中心静脈栄養・気管切開等（別表第8重症者）。月1回。限度額対象外。"},
+    {id:"c4",n:"特別管理加算Ⅱ",p:250,f:2500,u:"月",q:"在宅自己腹膜灌流・自己導尿・褥瘡管理・週3日以上点滴等。限度額対象外。"}
+  ]},
+  {g:"その他加算",a:[
+    {id:"c5",n:"ターミナルケア加算",p:2500,f:25000,u:"月",q:"在宅での看取りに際し死亡日前14日以内に2日以上ターミナルケアを実施。"},
+    {id:"c6",n:"初回加算Ⅰ（退院当日）",p:350,f:3500,u:"月",q:"退院当日に初回訪問を実施した場合。2024年改定で新設。"},
+    {id:"c7",n:"初回加算Ⅱ（退院翌日以降）",p:300,f:3000,u:"月",q:"退院翌日以降の初回訪問時。"},
+    {id:"c8",n:"退院時共同指導加算",p:600,f:6000,u:"月",q:"入院中に病院スタッフと共同で在宅療養指導。"},
+    {id:"c9",n:"看護体制強化加算Ⅰ",p:550,f:5500,u:"月",q:"実績要件を満たし届出。"},
+    {id:"c10",n:"看護体制強化加算Ⅱ",p:250,f:2500,u:"月",q:"Ⅰより低い実績要件。"},
+    {id:"c11",n:"専門管理加算",p:250,f:2500,u:"月",q:"専門研修修了看護師または特定行為研修修了者が計画管理。"}
+  ]}
+];
+
+// ===== 状態 =====
+var rehabOn = false;
+function getKanri1(){ var t=gv("kanri-type")||"other"; return t==="kino1"?13230:t==="kino2"?10030:t==="kino3"?8700:7670; }
+function getKanri2(){ return gv("kanri2-type")==="2"?2500:3000; }
+var specialOn = false;
+var chk = {};
+
+// 特別指示期間の基本療養費単価（週3日以内 / 週4日目以降）
+var SP_FEES = {
+  mn30: {w3:4250, w4:5250, pts_w3:425, pts_w4:525},
+  mn60: {w3:5550, w4:6550, pts_w3:555, pts_w4:655},
+  mn90: {w3:6550, w4:7550, pts_w3:655, pts_w4:755}
+};
+
+// ===== ユーティリティ =====
+function toggleSpecial(){
+  specialOn=!specialOn;
+  var card=$("special-card"), btn=$("special-btn");
+  if(specialOn){
+    card.style.display="";
+    btn.textContent="特別訪問看護指示書期間を追加済み（タップで非表示）";
+    btn.className="btn-toggle on";
+    calcSpecial();
+  } else {
+    card.style.display="none";
+    btn.textContent="＋ 特別訪問看護指示書期間（最大14日）を追加する";
+    btn.className="btn-toggle";
+    calc();
+  }
+}
+
+function calcSpecial(){
+  if(!specialOn) return;
+  var ins=gv("ins");
+  if(ins!=="med"){
+    $("special-detail").innerHTML='<div style="font-size:12px;color:#c0392b;padding:6px 8px;background:#fff5f5;border-radius:6px;">特別訪問看護指示書は医療保険のみ対象です。</div>';
+    calc(); return;
+  }
+  var startDay=parseInt(gv("sp-start")||0);
+  var totalDays=Math.min(14,Math.max(1,parseInt($("sp-total").value)||1));
+  var spTime=gv("sp-time");
+  var fees=SP_FEES[spTime]||SP_FEES["mn60"];
+  var dr=parseInt(gv("sp-doitu")||1);
+  var rate=dr===2?0.9:dr===3?0.85:1;
+
+  // 開始曜日から当週末（土）までの日数（日曜起算）
+  var daysToSat=startDay===0?7:(7-startDay);
+  var w1Days=Math.min(daysToSat,totalDays);
+  var w2Days=Math.min(7,Math.max(0,totalDays-w1Days));
+  var w3Days=Math.max(0,totalDays-w1Days-w2Days);
+
+  // 開始曜日の週内での日数（日=1日目, 月=2日目, ..., 土=7日目）
+  var startWeekDay=startDay===0?1:startDay+1;
+
+  // 週内の日数から通常単価日数・増額単価日数を計算
+  function weekSplit(days, weekStart){
+    // weekStart: この週の開始が「週何日目」か
+    var normalDays=Math.max(0, Math.min(days, Math.max(0,3-weekStart+1)));
+    var extraDays=Math.max(0, days-normalDays);
+    return {
+      norm: normalDays, extra: extraDays,
+      fNorm: Math.round(fees.w3*rate)*normalDays,
+      fExtra: Math.round(fees.w4*rate)*extraDays
+    };
+  }
+
+  var r1=weekSplit(w1Days, startWeekDay);
+  var r2=weekSplit(w2Days, 1);
+  var r3=weekSplit(w3Days, 1);
+  var baseFeeTotal=r1.fNorm+r1.fExtra+r2.fNorm+r2.fExtra+r3.fNorm+r3.fExtra;
+  var kanriTotal=getKanri1()+getKanri2()*Math.max(0,totalDays-1);
+  var grandTotal=baseFeeTotal+kanriTotal;
+
+  var DOW=["日","月","火","水","木","金","土"];
+  var deductNote=rate<1?"（同一建物"+Math.round(rate*100)+"%算定）":"";
+
+  function rowHtml(label,fee,count,sub){
+    return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #efe5f7;font-size:12px;">'+
+      '<div style="color:#444;flex:1;">'+label+'</div>'+
+      '<div style="color:#6A1B9A;font-weight:600;white-space:nowrap;">'+fmt(fee)+" × "+count+"日 ＝ "+fmt(sub)+'</div></div>';
+  }
+
+  var html='<div style="background:#f9f0ff;border-radius:8px;padding:10px 12px;border:1px solid #d4b0e8;">';
+  html+='<div style="font-size:12px;font-weight:700;color:#6A1B9A;margin-bottom:4px;">特別指示期間の料金内訳（'+DOW[startDay]+"曜日開始・"+totalDays+"日間）</div>";
+  html+='<div style="font-size:11px;color:#888;margin-bottom:8px;">1週間は日曜起算。週3日目まで通常単価、4日目以降は増額。'+deductNote+"</div>";
+
+  if(r1.norm>0) html+=rowHtml("1週目・通常（"+fees.pts_w3+"点×10円="+fmt(Math.round(fees.w3*rate))+"）",Math.round(fees.w3*rate),r1.norm,r1.fNorm);
+  if(r1.extra>0) html+=rowHtml("1週目・週4日目以降増額（"+fees.pts_w4+"点×10円="+fmt(Math.round(fees.w4*rate))+"）",Math.round(fees.w4*rate),r1.extra,r1.fExtra);
+  if(r2.norm>0) html+=rowHtml("2週目・通常（"+fees.pts_w3+"点×10円="+fmt(Math.round(fees.w3*rate))+"）",Math.round(fees.w3*rate),r2.norm,r2.fNorm);
+  if(r2.extra>0) html+=rowHtml("2週目・週4日目以降増額（"+fees.pts_w4+"点×10円="+fmt(Math.round(fees.w4*rate))+"）",Math.round(fees.w4*rate),r2.extra,r2.fExtra);
+  if(r3.norm>0) html+=rowHtml("3週目・通常（"+fees.pts_w3+"点×10円="+fmt(Math.round(fees.w3*rate))+"）",Math.round(fees.w3*rate),r3.norm,r3.fNorm);
+  if(r3.extra>0) html+=rowHtml("3週目・週4日目以降増額（"+fees.pts_w4+"点×10円="+fmt(Math.round(fees.w4*rate))+"）",Math.round(fees.w4*rate),r3.extra,r3.fExtra);
+  html+=rowHtml("訪問看護管理療養費1（月初1回）1,283点×10円",getKanri1(),1,getKanri1());
+  if(totalDays>1) html+=rowHtml("訪問看護管理療養費2（2日目以降）300点×10円",getKanri2(),totalDays-1,getKanri2()*(totalDays-1));
+  html+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;font-weight:700;color:#6A1B9A;border-top:1px solid #c9a0e0;margin-top:4px;"><div>特別指示期間 合計（10割）</div><div>'+fmt(grandTotal)+'</div></div>';
+  html+="</div>";
+  $("special-detail").innerHTML=html;
+  calc();
+}
+
+function $(id){ return document.getElementById(id); }
+function gv(id){ return $(id).value; }
+function fmt(n){ return n.toLocaleString() + "円"; }
+function show(id){ $(id).style.display=""; }
+function hide(id){ $(id).style.display="none"; }
+
+// ===== 保険種別切り替え =====
+function updateNTime(){
+  var ins=gv("ins"), s=$("n-t"), v=s.value;
+  s.innerHTML="";
+  if(ins==="med"){
+    s.innerHTML='<option value="mn30">30分未満（425点）</option><option value="mn60">30分以上1時間未満（555点）</option><option value="mn90">1時間以上1時間30分未満（655点）</option>';
+    s.value=(["mn30","mn60","mn90"].indexOf(v)>=0)?v:"mn60";
+  } else if(ins==="ij"){
+    s.innerHTML='<option value="ij20">20分未満・訪Ⅰ1（314単位）</option><option value="ij30">20〜30分未満・訪Ⅰ2（471単位）</option><option value="ij60">30分〜1時間未満・訪Ⅰ3（823単位）</option><option value="ij90">1時間〜1時間30分未満・訪Ⅰ4（1,128単位）</option>';
+    s.value=(["ij20","ij30","ij60","ij90"].indexOf(v)>=0)?v:"ij60";
+  } else {
+    s.innerHTML='<option value="ys20">20分未満・予防Ⅰ1（303単位）</option><option value="ys30">20〜30分未満・予防Ⅰ2（451単位）</option><option value="ys60">30分〜1時間未満・予防Ⅰ3（794単位）</option><option value="ys90">1時間〜1時間30分未満・予防Ⅰ4（1,090単位）</option>';
+    s.value=(["ys20","ys30","ys60","ys90"].indexOf(v)>=0)?v:"ys60";
+  }
+}
+function updateRTime(){
+  var ins=gv("ins"), s=$("r-t"), v=s.value;
+  s.innerHTML="";
+  if(ins==="med"){
+    s.innerHTML='<option value="mr30">30分未満（425点）</option><option value="mr60">30分以上1時間未満（555点）</option><option value="mr90">1時間以上1時間30分未満（655点）</option>';
+    s.value=(["mr30","mr60","mr90"].indexOf(v)>=0)?v:"mr60";
+  } else if(ins==="ij"){
+    s.innerHTML='<option value="rij1">Ⅰ5×1回（20分）294単位</option><option value="rij2">Ⅰ5×2回（40分）294単位×2</option><option value="rij3">Ⅰ5×3回（60分）294単位×3</option>';
+    s.value=(["rij1","rij2","rij3"].indexOf(v)>=0)?v:"rij2";
+  } else {
+    s.innerHTML='<option value="rys1">予防Ⅰ5×1回（20分）284単位</option><option value="rys2">予防Ⅰ5×2回（40分）284単位×2</option><option value="rys3">予防Ⅰ5×3回（60分）※50%減算</option>';
+    s.value=(["rys1","rys2","rys3"].indexOf(v)>=0)?v:"rys2";
+  }
+}
+function getIncomeList(){
+  var ins=gv("ins");
+  if(ins!=="med") return IC;
+  var ag=gv("age-group");
+  return ag==="o70"?IM_O70:ag==="o75"?IM_O75:IM_U70;
+}
+function updateIncome(){
+  var ins=gv("ins"), s=$("income"), list=getIncomeList();
+  s.innerHTML='<option value="">選択してください</option>';
+  list.forEach(function(x,i){
+    var o=document.createElement("option");
+    o.value=i; o.text="【"+x.g+"】"+x.l; s.appendChild(o);
+  });
+  if(ins==="med") show("multi-wrap"); else { hide("multi-wrap"); $("multi").value="0"; }
+  $("income-hint").textContent="";
+  onIncomeChange();
+}
+function updateAdds(){
+  var ins=gv("ins"), defs=ins==="med"?AM:ins==="ij"?AIJ:AYS;
+  var html="";
+  defs.forEach(function(grp){
+    html+='<div class="grp-ttl">'+grp.g+'</div>';
+    grp.a.forEach(function(x){
+      var unit=x.u==="月"?"/月":x.u==="日"?"/日":"/回";
+      var checked=chk[x.id]?' checked':'';
+      html+='<div class="arow"><input type="checkbox" id="'+x.id+'"'+checked+' onchange="onChk(\''+x.id+'\')"><div class="atxt"><div class="aname">'+x.n+'</div><div class="afee">'+x.p+(ins==="med"?"点":"単位")+'×10円＝'+fmt(x.f)+unit+'</div><div class="areq">'+x.q+'</div></div><div class="aamt" id="amt'+x.id+'">—</div></div>';
+    });
+  });
+  $("add-area").innerHTML=html;
+}
+function onInsChange(){
+  updateNTime(); updateRTime(); updateIncome(); updateAdds(); onRtChange();
+  var isMed=gv("ins")==="med";
+  var kr=$("kanri-row"), k2r=$("kanri2-row");
+  if(kr) kr.style.display=isMed?"":"none";
+  if(k2r) k2r.style.display=isMed?"":"none";
+  if(specialOn) calcSpecial(); else calc();
+}
+
+// ===== リハビリ切り替え =====
+function toggleRehab(){
+  rehabOn=!rehabOn;
+  if(rehabOn){
+    show("rehab-card");
+    $("rehab-btn").textContent="リハビリ訪問を追加済み（タップで非表示）";
+    $("rehab-btn").className="btn-toggle on";
+    onRtChange();
+  } else {
+    hide("rehab-card");
+    $("rehab-btn").textContent="＋ リハビリ訪問（訪問看護Ⅰ5）を追加する";
+    $("rehab-btn").className="btn-toggle";
+  }
+  calc();
+}
+
+// ===== リハビリ時間変更 =====
+function onRtChange(){
+  var ins=gv("ins"), rt=gv("r-t");
+  var isCare=(ins!=="med");
+  var is3=(rt==="rij3"||rt==="rys3");
+  var isYS=(ins==="ys");
+  if(isCare) show("deduct-wrap"); else hide("deduct-wrap");
+  if(isYS) show("db-wrap"); else { hide("db-wrap"); $("db").checked=false; }
+  if(is3) show("dc-wrap"); else { hide("dc-wrap"); $("dc").checked=false; }
+  var warn=$("r-warn");
+  if(rt==="rys3") warn.innerHTML='<div class="warn">要支援の1日3回以上（60分超）は50%減算となります。実際の利用はほぼありません。</div>';
+  else if(rt==="rij3") warn.innerHTML='<div class="warn">1日に40分を超える場合（3回目以降が発生）、その日の3回分全てが90%算定となります。「Ⅰ5の2超あり」をチェックすると自動計算されます。</div>';
+  else warn.innerHTML="";
+  calc();
+}
+
+// ===== 加算チェック =====
+function onChk(id){
+  var el=$(id); if(el) chk[id]=el.checked; calc();
+}
+
+// ===== 計算 =====
+function onAgeChange(){
+  updateIncome();
+  calc();
+}
+function onIncomeChange(){
+  var ins=gv("ins");
+  if(ins!=="med"){calc();return;}
+  var idx=gv("income");
+  var multiWrap=$("multi-wrap");
+  var list=getIncomeList();
+  if(idx===""||!list[parseInt(idx)]){
+    if(multiWrap) multiWrap.style.display="";
+    calc();return;
+  }
+  var inc=list[parseInt(idx)];
+  // 外来個人限度額適用区分・noMulti区分は多数該当を非表示
+  var hideMulti=inc.noMulti||inc.noMultiGai||(inc.lim_gai!==undefined&&inc.lim_gai!==null);
+  if(hideMulti){
+    if(multiWrap) multiWrap.style.display="none";
+    $("multi").value="0";
+  } else {
+    if(multiWrap) multiWrap.style.display="";
+  }
+  calc();
+}
+
+function calcSpecialTotal(){
+  if(!specialOn) return 0;
+  var ins=gv("ins"); if(ins!=="med") return 0;
+  var startDay=parseInt(gv("sp-start")||0);
+  var totalDays=Math.min(14,Math.max(1,parseInt($("sp-total").value)||1));
+  var spTime=gv("sp-time");
+  var fees=SP_FEES[spTime]||SP_FEES["mn60"];
+  var dr=parseInt(gv("sp-doitu")||1), rate=dr===2?0.9:dr===3?0.85:1;
+  var daysToSat=startDay===0?7:(7-startDay);
+  var w1Days=Math.min(daysToSat,totalDays);
+  var w2Days=Math.min(7,totalDays-w1Days);
+  var w3Days=Math.max(0,totalDays-w1Days-w2Days);
+  var startWeekDay=startDay===0?1:startDay+1;
+  function cws(days,ws){
+    var d3=Math.max(0,Math.min(days,3-ws+1));
+    var d4=Math.max(0,days-d3);
+    return Math.round(fees.w3*rate)*d3+Math.round(fees.w4*rate)*d4;
+  }
+  return cws(w1Days,startWeekDay)+cws(w2Days,1)+cws(w3Days,1)+getKanri1()+getKanri2()*(totalDays-1);
+}
+
+function calcNurse(){
+  var nv=Math.max(0,parseInt($("n-v").value)||0);
+  var detail=$("nurse-detail");
+  if(!nv){ if(detail) detail.innerHTML=""; return 0; }
+  var nt=gv("n-t"), d=NF[nt]; if(!d) return 0;
+  var ins=gv("ins");
+  var dr=parseInt(gv("n-d")||1), rate=dr===2?0.9:dr===3?0.85:1;
+  var fee=Math.round(d.f*rate);
+  var tot=fee*nv;
+  var ul=ins==="med"?"点":"単位";
+  var rows="";
+  var deductNote=rate<1?'<div class="dsub">同一建物減算（'+Math.round(rate*100)+'%算定）：'+fmt(d.f)+'→'+fmt(fee)+'/回</div>':"";
+  rows+='<div class="drow2"><div class="dn">基本療養費（'+d.p+ul+'×10円＝'+fmt(d.f)+'/回）'+deductNote+'</div><div class="dv">'+fmt(fee)+'×'+nv+'回＝'+fmt(fee*nv)+'</div></div>';
+  if(d.k){
+    var kt1v=getKanri1(), kt2v=getKanri2();
+    var ktLabel={"kino1":"機能強化型1","kino2":"機能強化型2","kino3":"機能強化型3","other":"その他"}[gv("kanri-type")||"other"]||"その他";
+    var kt2Label=kt2v===2500?"療養費2（2,500円/日）":"療養費1（3,000円/日）";
+    rows+='<div class="drow2"><div class="dn">訪問看護管理療養費（月初1回・'+ktLabel+'）<div class="dsub">月の初日の訪問時に算定。2024年改定でその他は7,670円に。</div></div><div class="dv">'+fmt(kt1v)+'（月1回）</div></div>';
+    tot+=kt1v;
+    if(nv>1){
+      var ks=kt2v*(nv-1);
+      rows+='<div class="drow2"><div class="dn">訪問看護管理療養費（2日目以降・'+kt2Label+'）<div class="dsub">2024年改定で新設。同一建物7割未満かつ重症実績ありなら療養費1（3,000円）、それ以外は療養費2（2,500円）。</div></div><div class="dv">'+fmt(kt2v)+'×'+(nv-1)+'日＝'+fmt(ks)+'</div></div>';
+      tot+=ks;
+    }
+  }
+  if(detail) detail.innerHTML='<div class="detail"><div class="detail-title">基本療養費・管理療養費の内訳</div>'+rows+'</div>';
+  return tot;
+}
+function calcRehab(){
+  var detail=$("rehab-detail");
+  if(!rehabOn){ if(detail) detail.innerHTML=""; return 0; }
+  var rv=Math.max(0,parseInt($("r-v").value)||0);
+  if(!rv){ if(detail) detail.innerHTML=""; return 0; }
+  var rt=gv("r-t"), d=RF[rt]; if(!d) return 0;
+  var ins=gv("ins"), ul=ins==="med"?"点":"単位";
+  var dr=parseInt(gv("r-d")||1), drate=dr===2?0.9:dr===3?0.85:1;
+  var rows="", tot=0;
+  if(d.k){
+    var fee=Math.round(d.f*drate);
+    tot=fee*rv;
+    var deductNote=drate<1?'<div class="dsub">同一建物減算（'+Math.round(drate*100)+'%算定）：'+fmt(d.f)+'→'+fmt(fee)+'/回</div>':"";
+    rows+='<div class="drow2"><div class="dn">基本療養費Ⅱ（'+d.p+'点×10円＝'+fmt(d.f)+'/回）'+deductNote+'</div><div class="dv">'+fmt(fee)+'×'+rv+'回＝'+fmt(fee*rv)+'</div></div>';
+    rows+='<div class="drow2"><div class="dn">訪問看護管理療養費1（1,283点×10円）<div class="dsub">看護師訪問と同一事業所の場合は合算して月1回のみ算定。</div></div><div class="dv">'+fmt(getKanri1())+'（月1回）</div></div>';
+    tot+=getKanri1();
+    if(rv>1){ var ks2=3000*(rv-1); rows+='<div class="drow2"><div class="dn">訪問看護管理療養費2（300点×10円/日）</div><div class="dv">3,000円×'+(rv-1)+'日＝'+fmt(ks2)+'</div></div>'; tot+=ks2; }
+    if(detail) detail.innerHTML='<div class="detail"><div class="detail-title">基本療養費・管理療養費の内訳</div>'+rows+'</div>';
+    return tot;
+  }
+  var isYS=(ins==="ys");
+  var ubase=Math.round(d.u*drate);
+  var da=$("da")&&$("da").checked, db=$("db")&&$("db").checked, dc=$("dc")&&$("dc").checked;
+  var sub=0; if(da) sub+=8; if(db) sub+=(da?15:5);
+  var eff=Math.max(0,ubase-sub);
+  var t=d.t, fpv;
+  if(dc&&t===3){
+    // Ⅰ5の2超コード基本単位（要介護265・要支援255）からさらにda/db減算を適用
+    var unit2choBase=isYS?255:265;
+    var unit2choEff=Math.max(0,unit2choBase-sub);
+    fpv=unit2choEff*3*10;
+  } else if(d.half){
+    // 要支援60分・2超チェックなし：50%減算
+    fpv=Math.round(eff*0.5)*t*10;
+  } else {
+    fpv=eff*t*10;
+  }
+  tot=fpv*rv;
+  var unitLabel=ins==="ij"?"訪問看護Ⅰ5":"介護予防訪問看護Ⅰ5";
+  var deductNote2=drate<1?'<div class="dsub">同一建物減算（'+Math.round(drate*100)+'%）：'+d.u+'→'+ubase+'単位/回</div>':"";
+  var deductNote3=(sub>0)?'<div class="dsub">減算適用：'+ubase+'−'+sub+'＝'+eff+'単位/回</div>':"";
+  var calcNote=(dc&&t===3)?'<div class="dsub">Ⅰ5の2超コード適用：'+(isYS?255:265)+'単位×3回×10円＝'+fmt(fpv)+'/訪問（通常'+fmt(eff*3*10)+'との差：-'+fmt(eff*3*10-fpv)+'）</div>':
+    d.half?'<div class="dsub">50%減算適用後：'+Math.round(eff*0.5)+'単位×'+t+'回×10円＝'+fmt(fpv)+'/訪問</div>':
+    t>1?'<div class="dsub">'+eff+'単位×'+t+'回×10円＝'+fmt(fpv)+'/訪問</div>':"";
+  rows+='<div class="drow2"><div class="dn">'+unitLabel+'（'+d.u+'単位×10円/回×'+t+'回/訪問）'+deductNote2+deductNote3+calcNote+'</div><div class="dv">'+fmt(fpv)+'×'+rv+'回＝'+fmt(tot)+'</div></div>';
+  if(detail) detail.innerHTML='<div class="detail"><div class="detail-title">基本報酬の内訳</div>'+rows+'</div>';
+  return tot;
+}
+function calcAdds(){
+  var ins=gv("ins"), defs=ins==="med"?AM:ins==="ij"?AIJ:AYS;
+  var nv=Math.max(0,parseInt($("n-v").value)||0);
+  var rv=rehabOn?Math.max(0,parseInt($("r-v").value)||0):0;
+  var tv=nv+rv, tot=0;
+  defs.forEach(function(grp){
+    grp.a.forEach(function(x){
+      var el=$(x.id), amtEl=$("amt"+x.id); if(!el||!amtEl) return;
+      if(el.checked){ var cnt=x.u==="回"?tv:1, sub=x.f*cnt; tot+=sub; amtEl.textContent=fmt(sub); }
+      else amtEl.textContent="—";
+    });
+  });
+  return tot;
+}
+function calc(){
+  var ns=calcNurse(), rs=calcRehab(), as=calcAdds(), ss=calcSpecialTotal();
+  var tot=ns+rs+as+ss, b=parseInt(gv("burden")), jiko=Math.round(tot*b/10);
+  $("r-n").textContent=fmt(ns);
+  $("r-r").textContent=rehabOn?fmt(rs):"—";
+  var spRow=$("r-special-row");
+  if(specialOn&&gv("ins")==="med"){
+    spRow.style.display="";
+    $("r-sp").textContent=fmt(ss);
+    $("r-add").textContent=fmt(as);
+  } else {
+    spRow.style.display="none";
+  }
+  $("r-t10").textContent=fmt(tot);
+  $("r-jiko").textContent=fmt(jiko);
+  var ins=gv("ins"), idx=gv("income"), list=getIncomeList();
+  if(idx===""){
+    $("r-lim").textContent="—"; $("r-real").textContent=fmt(jiko);
+    var tv2=(Math.max(0,parseInt($("n-v").value)||0))+(rehabOn?Math.max(0,parseInt($("r-v").value)||0):0);
+    $("r-per").textContent=tv2>0?fmt(Math.round(jiko/tv2)):"—";
+    $("r-sav").textContent="区分を選択すると表示";
+    $("saving-wrap").innerHTML="";
+    $("income-hint").textContent=""; return;
+  }
+  var inc=list[parseInt(idx)];
+  $("income-hint").textContent="限度額の目安："+inc.d;
+  var lim;
+  if(ins==="med"){
+    var mul=parseInt(gv("multi")||0);
+    var ag=gv("age-group");
+    // 70歳以上で外来個人限度額がある場合はそちらを使用（訪問看護は外来扱い）
+    if(ag!=="u70"&&inc.lim_gai){
+      lim=inc.lim_gai; // 外来個人限度額
+    } else if(mul&&inc.m){
+      lim=inc.m;
+    } else if(inc.r>0){
+      lim=inc.lim+Math.round(inc.r*Math.max(0,tot-267000));
+    } else {
+      lim=inc.lim;
+    }
+  } else lim=inc.lim;
+  var real=Math.min(jiko,lim), sav=Math.max(0,jiko-lim);
+  var tv3=(Math.max(0,parseInt($("n-v").value)||0))+(rehabOn?Math.max(0,parseInt($("r-v").value)||0):0);
+  $("r-lim").textContent=fmt(lim);
+  $("r-real").textContent=fmt(real);
+  $("r-per").textContent=tv3>0?fmt(Math.round(real/tv3)):"—";
+  $("r-sav").textContent=sav>0?fmt(sav)+" 軽減":"軽減なし（限度額以下）";
+  $("saving-wrap").innerHTML=sav>0?'<div class="saving">高額療養費／高額介護サービス費が適用されます｜'+fmt(jiko)+'→'+fmt(real)+'（'+fmt(sav)+' 軽減）</div>':"";
+}
+
+// ===== 起動 =====
+window.addEventListener("load",function(){
+  updateIncome(); updateAdds(); calc();
+});
+</script>
+</body>
+</html>
